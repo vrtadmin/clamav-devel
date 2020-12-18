@@ -3549,6 +3549,128 @@ static void emax_reached(cli_ctx *ctx)
 #define LINESTR2(x) LINESTR(x)
 #define __AT__ " at line " LINESTR2(__LINE__)
 
+/**
+ * @brief Provide the following to the calling application for each embedded file:
+ *  - name of parent file
+ *  - size of parent file
+ *  - name of current file
+ *  - size of current file
+ *  - pointer to the current file data
+ *
+ * @param cb
+ * @param ctx
+ * @param filetype
+ * @param old_hook_lsig_matches
+ * @param parent_property
+ * @param run_cleanup
+ * @return cl_error_t
+ */
+static cl_error_t dispatch_file_inspection_callback(clcb_file_inspection cb, cli_ctx *ctx, const char *filetype, bitset_t *old_hook_lsig_matches, void *parent_property, int *run_cleanup)
+{
+    cl_error_t ret = CL_CLEAN;
+
+    int fd            = -1;
+    size_t fmap_index = 0; /* index of current file */
+
+    cl_fmap_t *fmap         = NULL;
+    const char *file_name   = NULL;
+    size_t file_size        = 0;
+    const char *file_buffer = NULL;
+
+    char *intermediates = NULL;
+
+    cl_fmap_t *parent_fmap       = NULL;
+    const char *parent_file_name = NULL;
+    size_t parent_file_size      = 0;
+
+    UNUSEDPARAM(parent_property);
+
+    *run_cleanup = 0;
+
+    if (NULL == cb) {
+        return ret;
+    }
+
+    fmap = *(ctx->fmap - fmap_index);
+    fd   = fmap_fd(fmap);
+
+    file_name   = fmap->name;
+    file_buffer = fmap_need_off_once_len(fmap, fmap->nested_offset, fmap->len, &file_size);
+
+    fmap_index += 1;
+    parent_fmap = *(ctx->fmap - fmap_index);
+
+    if (NULL != parent_fmap) {
+        cl_fmap_t *previous_fmap = parent_fmap;
+
+        parent_file_size = parent_fmap->len;
+
+        while (NULL != previous_fmap) {
+            char *temp;
+            const char *intermediate = NULL;
+
+            if (NULL == previous_fmap->name) {
+                intermediate = "(no name)";
+            } else {
+                intermediate = previous_fmap->name;
+            }
+
+            if (NULL != intermediates) {
+                size_t temp_len = strlen(intermediates) + strlen(" > ") + strlen(intermediate) + 1;
+                temp            = cli_malloc(temp_len);
+                if (NULL == temp) {
+                    ret = CL_EMEM;
+                    goto done;
+                }
+                snprintf(temp, temp_len, "%s > %s", intermediate, intermediates);
+                free(intermediates);
+            } else {
+                temp = cli_strdup_to_utf8(intermediate);
+                if (NULL == temp) {
+                    ret = CL_EMEM;
+                    goto done;
+                }
+            }
+            intermediates = temp;
+            temp          = NULL;
+
+            fmap_index += 1;
+            previous_fmap = *(ctx->fmap - fmap_index);
+        }
+
+        parent_file_name = intermediates;
+    }
+
+    perf_start(ctx, PERFT_INSPECT);
+    ret = cb(fd, filetype, parent_file_name, parent_file_size, file_name, file_size, file_buffer, ctx->cb_ctx);
+    perf_stop(ctx, PERFT_INSPECT);
+
+    switch (ret) {
+        case CL_BREAK:
+            cli_dbgmsg("dispatch_file_inspection_callback: scan cancelled by callback\n");
+            ctx->hook_lsig_matches = old_hook_lsig_matches;
+            *run_cleanup           = 1;
+            break;
+        case CL_VIRUS:
+            cli_dbgmsg("dispatch_file_inspection_callback: file blocked by callback\n");
+            ctx->hook_lsig_matches = old_hook_lsig_matches;
+            *run_cleanup           = 1;
+            cli_append_virus(ctx, "Detected.By.Callback.Inspection");
+            break;
+        case CL_CLEAN:
+            break;
+        default:
+            cli_warnmsg("dispatch_file_inspection_callback: ignoring bad return code from callback\n");
+    }
+
+done:
+
+    if (NULL != intermediates) {
+        free(intermediates);
+    }
+    return ret;
+}
+
 static cl_error_t dispatch_prescan_callback(clcb_pre_scan cb, cli_ctx *ctx, const char *filetype, bitset_t *old_hook_lsig_matches, void *parent_property, unsigned char *hash, size_t hashed_size, int *run_cleanup)
 {
     cl_error_t res = CL_CLEAN;
@@ -3794,9 +3916,17 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
         }
     }
 
-    /*
-     * Check if we've already scanned this file before.
-     */
+    ret = dispatch_file_inspection_callback(ctx->engine->cb_file_inspection, ctx, filetype, old_hook_lsig_matches, parent_property, &run_cleanup);
+    if (run_cleanup) {
+        if (ret == CL_VIRUS) {
+            ret = cli_checkfp(ctx);
+            goto done;
+        } else {
+            ret = CL_CLEAN;
+            goto done;
+        }
+    }
+
     perf_start(ctx, PERFT_CACHE);
     if (!(SCAN_COLLECT_METADATA))
         res = cache_check(hash, ctx);

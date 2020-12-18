@@ -360,6 +360,7 @@ struct cl_engine {
     crtmgr cmgr;
 
     /* Callback(s) */
+    clcb_file_inspection cb_file_inspection;
     clcb_pre_cache cb_pre_cache;
     clcb_pre_scan cb_pre_scan;
     clcb_post_scan cb_post_scan;

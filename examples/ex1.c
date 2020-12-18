@@ -24,10 +24,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+
 #include <clamav.h>
 
 #ifndef O_BINARY
