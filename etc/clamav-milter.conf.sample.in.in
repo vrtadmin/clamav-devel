@@ -17,7 +17,7 @@ Example
 # inet6:port@[hostname|ip-address] - to specify an ipv6 socket
 #
 # Default: no default
-#MilterSocket /tmp/clamav-milter.socket
+#MilterSocket unix:@RUNSTATEDIR@/clamav/clamav-milter.socket
 #MilterSocket inet:7357
 
 # Define the group ownership for the (unix) milter socket.
@@ -64,7 +64,7 @@ Example
 # also owned by root to keep other users from tampering with it.
 #
 # Default: disabled
-#PidFile /var/run/clamav-milter.pid
+#PidFile @RUNSTATEDIR@/clamav-milter.pid
 
 # Optional path to the global temporary directory.
 # Default: system specific (usually /tmp or /var/tmp).
@@ -91,6 +91,7 @@ Example
 # fashion.
 #
 # Default: no default
+#ClamdSocket unix:@RUNSTATEDIR@/clamav/clamd.ctl
 #ClamdSocket tcp:scanner.mydomain:7357
 
 

@@ -79,6 +79,12 @@ if test "$enable_experimental" = "yes"; then
   VERSION_SUFFIX="$VERSION_SUFFIX-exp"
 fi
 
+# Autoconf 2.70 will support this, and many distros patch it in,
+# but Autoconf 2.70 hasn't actually been released yet (it's in beta).
+AS_IF([test -z "${runstatedir}"], [runstatedir='${localstatedir}/run'])
+AC_SUBST([runstatedir])
+
+
 build_configure_args=`echo "$ac_configure_args" | sed -e 's/[\"]//g'`
 AC_SUBST([BUILD_CONFIGURE_FLAGS], [$build_configure_args])
 
@@ -104,6 +110,7 @@ m4_include([m4/reorganization/libs/libz.m4])
 m4_include([m4/reorganization/libs/bzip.m4])
 m4_include([m4/reorganization/libs/unrar.m4])
 m4_include([m4/reorganization/libs/systemd.m4])
+m4_include([m4/reorganization/libs/openrc.m4])
 m4_include([m4/reorganization/code_checks/ipv6.m4])
 m4_include([m4/reorganization/code_checks/dns.m4])
 m4_include([m4/reorganization/code_checks/fanotify.m4])
@@ -192,7 +199,10 @@ AC_CONFIG_FILES([
                  libclamav.pc
                  platform.h
                  clamav-types.h
-                 clamav-version.h])
+                 clamav-version.h
+                 etc/clamd.conf.sample.in
+                 etc/clamav-milter.conf.sample.in
+                 etc/freshclam.conf.sample.in])
 if test "x$enable_libclamav_only" != "xyes"; then
     AC_CONFIG_FILES([
                      clamscan/Makefile
@@ -202,10 +212,14 @@ if test "x$enable_libclamav_only" != "xyes"; then
                      clamd/Makefile
                      clamd/clamav-daemon.service
                      clamd/clamav-daemon.socket
+                     clamd/openrc/clamd.in
                      clamdscan/Makefile
                      clamsubmit/Makefile
+                     clamonacc/openrc/clamonacc.in
                      clamav-milter/Makefile
+                     clamav-milter/openrc/clamav-milter.in
                      freshclam/clamav-freshclam.service
+                     freshclam/openrc/freshclam.in
                      freshclam/Makefile
                      sigtool/Makefile
                      clamconf/Makefile

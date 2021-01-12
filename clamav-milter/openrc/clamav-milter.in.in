@@ -1,0 +1,34 @@
+#!/sbin/openrc-run
+
+# Note: the "Foreground" option in clamav-milter.conf MUST
+# be set to "no".
+command="@SBINDIR@/clamav-milter"
+
+# For now, must be manually synchronized with the PidFile
+# variable in clamav-milter.conf.
+#
+# https://bugzilla.clamav.net/show_bug.cgi?id=12595
+#
+pidfile="@RUNSTATEDIR@/${RC_SVCNAME}.pid"
+
+depend() {
+  # The milter can successfully launch without clamd, but it's not a
+  # great user experience to have the milter start accepting requests
+  # that it can't process. The "use" dependency below will start clamd
+  # before clamav-milter, so long as clamd is also present this runlevel.
+  use clamd
+}
+
+start_pre() {
+  # This exists to support the (disabled) default MilterSocket setting
+  # within clamav-milter.conf. The "clamav" user and group agree with
+  # the (disabled) default "User" and "MilterSocketGroup" settings.
+  #
+  # Creating this directory is harmless even when a local socket is
+  # not used. In fact, the clamd service that we depend on should
+  # create it as well, to hold its own local socket (if enabled).
+  checkpath --directory \
+           --mode 0755 \
+           --owner clamav:clamav \
+           "@RUNSTATEDIR@/clamav"
+}
