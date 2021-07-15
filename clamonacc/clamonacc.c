@@ -69,7 +69,7 @@ static void onas_clamonacc_exit(int sig)
 {
     logg("*Clamonacc: onas_clamonacc_exit(), signal %d\n", sig);
     if (sig == 11) {
-        logg("!Clamonacc: clamonacc has experienced a fatal error, if you continue to see this error, please run clamonacc with --verbose and report the issue and crash report to the developpers\n");
+        logg("!Clamonacc: clamonacc has experienced a fatal error, if you continue to see this error, please run clamonacc with --verbose and report the issue and crash report to the developers\n");
     }
 
     if (g_ctx) {
@@ -439,7 +439,7 @@ void help(void)
     mprintf("    --remove                           Remove infected files. Be careful!\n");
     mprintf("    --move=DIRECTORY                   Move infected files into DIRECTORY\n");
     mprintf("    --copy=DIRECTORY                   Copy infected files into DIRECTORY\n");
-    mprintf("    --config-file=FILE                 Read configuration from FILE.\n");
+    mprintf("    --config-file=FILE     -c FILE     Read configuration from FILE\n");
     mprintf("    --allmatch             -z          Continue scanning within file after finding a match.\n");
     mprintf("    --fdpass                           Pass filedescriptor to clamd (useful if clamd is running as a different user)\n");
     mprintf("    --stream                           Force streaming files to clamd (for debugging and unit testing)\n");

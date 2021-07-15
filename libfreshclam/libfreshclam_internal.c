@@ -2329,7 +2329,7 @@ fc_error_t updatedb(
 
             ret = getcvd(remoteFilename, tmpfile, server, localTimestamp, remoteVersion, logerr);
             if (FC_SUCCESS != ret) {
-                if (FC_EMIRRORNOTSYNC == status) {
+                if (FC_EMIRRORNOTSYNC == ret) {
                     /* Note: We can't retry with CDIFF's if FC_EMIRRORNOTSYNC happened here.
                      * If we did there could be an infinite loop.
                      * Best option is to accept the older CVD.
@@ -2345,6 +2345,7 @@ fc_error_t updatedb(
             newLocalFilename = cli_strdup(remoteFilename);
         } else if (0 == numPatchesReceived) {
             logg("The database server doesn't have the latest patch for the %s database (version %u). The server will likely have updated if you check again in a few hours.\n", database, remoteVersion);
+            *dbFilename = cli_strdup(localFilename);
             goto up_to_date;
         } else {
             /*
