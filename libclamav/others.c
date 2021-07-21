@@ -1615,6 +1615,11 @@ void cl_engine_set_clcb_pre_cache(struct cl_engine *engine, clcb_pre_cache callb
     engine->cb_pre_cache = callback;
 }
 
+void cl_engine_set_clcb_file_inspection(struct cl_engine *engine, clcb_file_inspection callback)
+{
+    engine->cb_file_inspection = callback;
+}
+
 void cl_engine_set_clcb_pre_scan(struct cl_engine *engine, clcb_pre_scan callback)
 {
     engine->cb_pre_scan = callback;
