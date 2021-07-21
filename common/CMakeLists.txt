@@ -51,7 +51,9 @@ set_target_properties( common_obj PROPERTIES COMPILE_FLAGS "${WARNCFLAGS}" )
 if(APPLE)
     target_sources( common_obj PRIVATE mac/cert_util_mac.m )
 elseif(WIN32)
-    target_sources( common_obj PRIVATE service.c PUBLIC service.h )
+    target_sources( common_obj 
+        PRIVATE service.c scanmem.c exescanner.c 
+        PUBLIC service.h scanmem.h exescanner.h)
     target_sources( common_obj PRIVATE win/cert_util_win.c )
 else()
     target_sources( common_obj PRIVATE linux/cert_util_linux.c )
@@ -67,7 +69,8 @@ target_link_libraries( common_obj
 if(WIN32)
     target_link_libraries( common_obj
         PUBLIC
-            crypt32 )
+            crypt32 
+            psapi)
 endif()
 
 if(HAVE_SYSTEMD)
